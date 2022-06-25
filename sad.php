@@ -98,7 +98,7 @@ function decryptFile_tar($file, $key, $hash = null) {
         } elseif ($result[1] === SODIUM_CRYPTO_SECRETSTREAM_XCHACHA20POLY1305_TAG_FINAL) {
             assert($ptr === $filelen);
         } else {
-            throw new Error("Unknown tag " + $result[1]);
+            throw new Exception("Unknown tag " + $result[1]);
         }
 
         $data .= $result[0];

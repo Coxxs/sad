@@ -107,7 +107,7 @@ function decryptFile_tar($file, $key, $hash = null) {
     return $header[0].padTar($header[0]).$data.padTar($data);
 }
 
-$masterkey = hex2bin("9A............................................................D4");
+$masterkey = hex2bin("9AD8........................................................6DD4");
 $filename = 'OfflinePack'
 $file = file_get_contents($filename.'.sa');
 $data = parseArchive($file, $masterkey);

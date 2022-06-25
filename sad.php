@@ -10,11 +10,6 @@ function binToUint32LE($bin) {
     return unpack('V', $bin)[1];
 }
 
-function parseMsgPack($bin) {
-    $value = MessagePack::unpack($bin);
-    var_dump($value);
-}
-
 function deriveKey($header, $masterkey) {
     $kid = binToUint64LE(substr($header, 16, 8));
     $context = substr($header, 24, 8);

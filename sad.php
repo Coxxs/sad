@@ -85,7 +85,7 @@ function decryptFile_tar($file, $key, $hash = null) {
     $filelen = strlen($file);
     while($filelen - $ptr > 0) {
         $len = $filelen - $ptr;
-        if ($len > 0x400000) {
+        if ($len > 0x400011) {
             $len = 0x400000;
             $len += 0x11;
         }

@@ -30,7 +30,6 @@ function parseArchive($archive, $masterkey) {
     $ptr = 8;
     $msgpack = substr($archive, $ptr, $msgpacklen);
     $ptr += $msgpacklen;
-    parseMsgPack($msgpack);
 
     $signature = substr($archive, $ptr, 0x40);
     $ptr += 0x40;

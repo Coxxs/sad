@@ -139,14 +139,11 @@ function decryptFile_tar(string $file, string $key, string $hash = null): string
     return $header[0].padTar($header[0]).$data.padTar($data);
 }
 
-$masterkeys = [
-    hex2bin('50EB........................................................1ADE'),
-    hex2bin('64FA........................................................3FE0'),
-    // ...
-];
+$config = require 'config.php';
+
 $filename = 'file.spk'; // file.sa / file.pat
 $file = file_get_contents($filename);
-$data = parseArchive($file, $masterkeys);
+$data = parseArchive($file, $config['masterkeys']);
 
 if ($data) {
     echo 'Success';

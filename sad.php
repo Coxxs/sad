@@ -40,7 +40,7 @@ function parseArchive(string $archive, array $masterkeys): string {
         }
     }
     if ($publickey) {
-        echo 'Found valid signature! (Public key: '.bin2hex($masterkey).')'.nl2br("\n");
+        echo 'Found valid signature! (Public key: '.bin2hex($publickey).')'.nl2br("\n");
     } else {
         echo 'Invalid signature!'.nl2br("\n");
     }

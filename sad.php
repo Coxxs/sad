@@ -1,4 +1,7 @@
 <?php
+error_reporting(E_ALL);
+ini_set('memory_limit','4096M');
+
 require_once 'vendor/autoload.php';
 require_once 'functions.php';
 use \MessagePack\MessagePack;
@@ -28,7 +31,20 @@ function parseArchive(string $archive, array $masterkeys): string {
     $signature = substr($archive, $ptr, 0x40);
     $ptr += 0x40;
 
-    // TODO: check signature of msgpack
+    // check signature of msgpack data
+    $publickey = '';
+    foreach ($masterkeys as $masterkey) {
+        if (sodium_crypto_sign_verify_detached($signature, $msgpack, $masterkey)) {
+            $publickey = $masterkey;
+            break;
+        }
+    }
+    if ($publickey) {
+        echo 'Found valid signature! (Public key: '.bin2hex($masterkey).')'.nl2br("\n");
+    } else {
+        echo 'Invalid signature!'.nl2br("\n");
+    }
+
     $meta = MessagePack::unpack($msgpack);
     $success = false;
     $validkeys = [];
@@ -48,7 +64,7 @@ function parseArchive(string $archive, array $masterkeys): string {
             try {
                 $data .= decryptFile_tar($filedata, $key, $hash);
                 if (!in_array($masterkey, $validkeys)) {
-                    echo 'Found valid key: '.bin2hex($masterkey).nl2br("\n");
+                    echo 'Found valid decryption key: '.bin2hex($masterkey).nl2br("\n");
                     $validkeys []= $masterkey;
                 }
             } catch (InvalidKeyException $err) {
@@ -68,7 +84,7 @@ function parseArchive(string $archive, array $masterkeys): string {
     return $data;
 }
     
-function padTar(string &$data): string {
+function padTar(string $data): string {
     $pad = strlen($data) % 0x200;
     if ($pad === 0) {
         return '';

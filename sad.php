@@ -5,7 +5,7 @@ use \MessagePack\MessagePack;
 
 class InvalidKeyException extends Exception {}
 
-function deriveKey(string $header, string $masterkey) {
+function deriveKey(string $header, string $masterkey): string {
     $kid = binToUint64LE(substr($header, 16, 8));
     $context = substr($header, 24, 8);
     $context[7] = "\0";
@@ -14,7 +14,7 @@ function deriveKey(string $header, string $masterkey) {
     return $key;
 }
 
-function parseArchive(string $archive, array $masterkeys) {
+function parseArchive(string $archive, array $masterkeys): string {
     $magic = substr($archive, 1, 3);
     assert($magic === hex2bin('ADBEEF'));
     
@@ -68,7 +68,7 @@ function parseArchive(string $archive, array $masterkeys) {
     return $data;
 }
     
-function padTar(string &$data) {
+function padTar(string &$data): string {
     $pad = strlen($data) % 0x200;
     if ($pad === 0) {
         return '';
@@ -76,7 +76,7 @@ function padTar(string &$data) {
     return str_repeat("\0", 0x200 - $pad);
 }
 
-function decryptFile_tar(string $file, string $key, string $hash = null) {
+function decryptFile_tar(string $file, string $key, string $hash = null): string {
     if ($hash != null) {
         assert(sodium_crypto_generichash($file) === $hash);
     }

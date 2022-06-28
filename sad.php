@@ -2,15 +2,17 @@
 require_once 'vendor/autoload.php';
 use \MessagePack\MessagePack;
 
-function binToUint64LE($bin) {
+class InvalidKeyException extends Exception {}
+
+function binToUint64LE(string $bin): int {
     return unpack('P', $bin)[1];
 }
 
-function binToUint32LE($bin) {
+function binToUint32LE(string $bin): int {
     return unpack('V', $bin)[1];
 }
 
-function deriveKey($header, $masterkey) {
+function deriveKey(string $header, string $masterkey) {
     $kid = binToUint64LE(substr($header, 16, 8));
     $context = substr($header, 24, 8);
     $context[7] = "\0";
@@ -20,7 +22,7 @@ function deriveKey($header, $masterkey) {
     return $key;
 }
 
-function parseArchive($archive, $masterkey) {
+function parseArchive(string $archive, array $masterkeys) {
     $magic = substr($archive, 1, 3);
     assert($magic === hex2bin('ADBEEF'));
     
@@ -36,26 +38,40 @@ function parseArchive($archive, $masterkey) {
 
     // TODO: check signature of msgpack
     $meta = MessagePack::unpack($msgpack);
-    $key = deriveKey($meta[0], $masterkey);
+    $success = false;
+    foreach ($masterkeys as $masterkey) {
+        $pptr = $ptr;
+        $key = deriveKey($meta[0], $masterkey);
 
-    $files = $meta[1];
-    $data = '';
-    foreach ($files as $file) {
-        $len = $file[0];
-        $hash = $file[1];
-        assert($hash != null);
-
-        $filedata = substr($archive, $ptr, $len);
-        $ptr += $len;
-
-        $data .= decryptFile_tar($filedata, $key, $hash);
+        $files = $meta[1];
+        $data = '';
+        foreach ($files as $file) {
+            $len = $file[0];
+            $hash = $file[1];
+            assert($hash != null);
+    
+            $filedata = substr($archive, $pptr, $len);
+            $pptr += $len;
+            try {
+                $data .= decryptFile_tar($filedata, $key, $hash);
+            } catch (InvalidKeyException $err) {
+                goto END;
+            }
+            
+        }
+    
+        $data .= str_repeat("\0", 0x400);
+        $success = true;
+        break;
+        END:
     }
-
-    $data .= str_repeat("\0", 0x400);
+    if (!$success) {
+        throw new InvalidKeyException("Unable to find a valid key!");
+    }
     return $data;
 }
     
-function padTar(&$data) {
+function padTar(string &$data) {
     $pad = strlen($data) % 0x200;
     if ($pad === 0) {
         return '';
@@ -63,7 +79,7 @@ function padTar(&$data) {
     return str_repeat("\0", 0x200 - $pad);
 }
 
-function decryptFile_tar($file, $key, $hash = null) {
+function decryptFile_tar(string $file, string $key, string $hash = null) {
     if ($hash != null) {
         assert(sodium_crypto_generichash($file) === $hash);
     }
@@ -73,7 +89,10 @@ function decryptFile_tar($file, $key, $hash = null) {
     $ptr += 24;
 
     $header = sodium_crypto_secretstream_xchacha20poly1305_pull($state, substr($file, $ptr, 403));
-    assert($header && $header[1] === SODIUM_CRYPTO_SECRETSTREAM_XCHACHA20POLY1305_TAG_FINAL);
+    if (!$header) {
+        throw new InvalidKeyException();
+    }
+    assert($header[1] === SODIUM_CRYPTO_SECRETSTREAM_XCHACHA20POLY1305_TAG_FINAL);
     // var_dump($header);
     $ptr += 403;
 
@@ -107,9 +126,19 @@ function decryptFile_tar($file, $key, $hash = null) {
     return $header[0].padTar($header[0]).$data.padTar($data);
 }
 
-$masterkey = hex2bin("9AD8........................................................6DD4");
-$filename = 'OfflinePack'
-$file = file_get_contents($filename.'.sa');
-$data = parseArchive($file, $masterkey);
+$masterkeys = [
+    hex2bin('50EB........................................................1ADE'),
+    hex2bin('64FA........................................................3FE0'),
+    // ...
+];
+$filename = 'file.spk'; // file.sa
+$file = file_get_contents($filename);
+$data = parseArchive($file, $masterkeys);
 
-file_put_contents($filename.".tar", $data);
+if ($data) {
+    echo 'Success';
+    file_put_contents($filename.'.tar', $data);
+} else {
+    echo 'Failure';
+}
+

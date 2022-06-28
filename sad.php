@@ -144,7 +144,7 @@ $masterkeys = [
     hex2bin('64FA........................................................3FE0'),
     // ...
 ];
-$filename = 'file.spk'; // file.sa
+$filename = 'file.spk'; // file.sa / file.pat
 $file = file_get_contents($filename);
 $data = parseArchive($file, $masterkeys);
 

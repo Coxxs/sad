@@ -1,5 +1,6 @@
 {
     "require": {
-        "rybakit/msgpack": "^0.9.1"
+        "rybakit/msgpack": "^0.9.1",
+        "paragonie/sodium_compat": "^1.17"
     }
 }

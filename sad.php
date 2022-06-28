@@ -1,24 +1,16 @@
 <?php
 require_once 'vendor/autoload.php';
+require_once 'functions.php';
 use \MessagePack\MessagePack;
 
 class InvalidKeyException extends Exception {}
-
-function binToUint64LE(string $bin): int {
-    return unpack('P', $bin)[1];
-}
-
-function binToUint32LE(string $bin): int {
-    return unpack('V', $bin)[1];
-}
 
 function deriveKey(string $header, string $masterkey) {
     $kid = binToUint64LE(substr($header, 16, 8));
     $context = substr($header, 24, 8);
     $context[7] = "\0";
 
-    // TODO: PHP not allow subkey_id > PHP_INT_MAX (2^63 - 1), this is a PHP bug.
-    $key = sodium_crypto_kdf_derive_from_key(32, $kid, $context, $masterkey);
+    $key = crypto_kdf_derive_from_key(32, $kid, $context, $masterkey);
     return $key;
 }
 
@@ -146,4 +138,3 @@ if ($data) {
 } else {
     echo 'Failure';
 }
-

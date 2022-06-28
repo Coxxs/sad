@@ -39,6 +39,7 @@ function parseArchive(string $archive, array $masterkeys) {
     // TODO: check signature of msgpack
     $meta = MessagePack::unpack($msgpack);
     $success = false;
+    $validkeys = [];
     foreach ($masterkeys as $masterkey) {
         $pptr = $ptr;
         $key = deriveKey($meta[0], $masterkey);
@@ -54,6 +55,10 @@ function parseArchive(string $archive, array $masterkeys) {
             $pptr += $len;
             try {
                 $data .= decryptFile_tar($filedata, $key, $hash);
+                if (!in_array($masterkey, $validkeys)) {
+                    echo 'Found valid key: '.bin2hex($masterkey).nl2br("\n");
+                    $validkeys []= $masterkey;
+                }
             } catch (InvalidKeyException $err) {
                 goto END;
             }
